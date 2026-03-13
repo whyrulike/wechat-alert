@@ -64,6 +64,80 @@ docker compose up -d
 | `/health` | GET | 健康检查，返回 `{"status":"ok"}` |
 | `/webhook` | POST | Grafana Webhook 接收端点 |
 
+## 测试验证
+
+### 健康检查
+
+```bash
+curl http://localhost:18091/health
+```
+
+### 模拟 Grafana 告警（curl 测试）
+
+```bash
+curl -X POST http://localhost:18091/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "receiver": "wechat",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {
+          "alertname": "TestAlert",
+          "instance": "server1:9090",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "This is a test alert",
+          "description": "Testing wechat-alert webhook forwarding"
+        },
+        "startsAt": "2026-03-13T10:00:00Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "generatorURL": "http://grafana:3000/alerting/test"
+      }
+    ],
+    "groupLabels": {"alertname": "TestAlert"},
+    "commonLabels": {"alertname": "TestAlert"},
+    "commonAnnotations": {},
+    "externalURL": "http://grafana:3000/"
+  }'
+```
+
+如果配置正确，你的企业微信（和个人微信）会收到一条测试告警消息。
+
+### 模拟告警恢复
+
+```bash
+curl -X POST http://localhost:18091/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "receiver": "wechat",
+    "status": "resolved",
+    "alerts": [
+      {
+        "status": "resolved",
+        "labels": {
+          "alertname": "TestAlert",
+          "instance": "server1:9090",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "This is a test alert",
+          "description": "Testing wechat-alert webhook forwarding"
+        },
+        "startsAt": "2026-03-13T10:00:00Z",
+        "endsAt": "2026-03-13T10:05:00Z",
+        "generatorURL": "http://grafana:3000/alerting/test"
+      }
+    ],
+    "groupLabels": {"alertname": "TestAlert"},
+    "commonLabels": {"alertname": "TestAlert"},
+    "commonAnnotations": {},
+    "externalURL": "http://grafana:3000/"
+  }'
+```
+
 ## 消息格式示例
 
 ```
